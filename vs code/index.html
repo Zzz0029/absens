@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Pertemuan</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 300px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px 0;
+            width: 100%;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Absensi Pertemuan</h1>
+
+    <form id="absenForm">
+        <input type="text" id="nama" placeholder="Nama Anda" required>
+        <button type="button" onclick="absen()">Absen Sekarang</button>
+    </form>
+
+    <p id="status"></p>
+
+    <script>
+        function absen() {
+            let nama = document.getElementById("nama").value;
+            if (!nama) {
+                alert("Harap isi nama!");
+                return;
+            }
+
+            document.getElementById("status").innerText = "Mengambil lokasi & IP...";
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        let lat = position.coords.latitude;
+                        let lon = position.coords.longitude;
+
+                        fetch("https://api.ipify.org?format=json")
+                            .then(res => res.json())
+                            .then(data => {
+                                kirimData(nama, data.ip, `${lat},${lon}`);
+                            })
+                            .catch(() => {
+                                document.getElementById("status").innerText = "Gagal mengambil IP.";
+                            });
+                    },
+                    error => {
+                        document.getElementById("status").innerText = "Tidak bisa mengambil lokasi.";
+                    }
+                );
+            } else {
+                alert("Browser tidak mendukung geolocation.");
+            }
+        }
+
+        function kirimData(nama, ip, lokasi) {
+            fetch("simpan.php", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `nama=${encodeURIComponent(nama)}&ip=${encodeURIComponent(ip)}&lokasi=${encodeURIComponent(lokasi)}`
+            })
+            .then(res => res.text())
+            .then(response => {
+                document.getElementById("status").innerText = response;
+                document.getElementById("absenForm").reset();
+            })
+            .catch(() => {
+                document.getElementById("status").innerText = "Gagal mengirim data.";
+            });
+        }
+    </script>
+
+</body>
+</html>
+
